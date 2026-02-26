@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>عجلة الحظ - IChancy Seven</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a0000 0%, #4a0000 50%, #2a0000 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: white;
+            overflow: hidden;
+        }
+
+        .container {
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .logo {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px #ff0000;
+        }
+
+        .logo span {
+            color: #ff3333;
+            font-size: 1.2em;
+        }
+
+        .wheel-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin: 20px auto;
+        }
+
+        .wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.5);
+            border: 6px solid #8b0000;
+            transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+        }
+
+        .wheel-segment {
+            position: absolute;
+            width: 50%;
+            height: 50%;
+            transform-origin: 100% 100%;
+            left: 0;
+            top: 0;
+            clip-path: polygon(100% 100%, 0 0, 100% 0);
+        }
+
+        .wheel-segment span {
+            position: absolute;
+            left: 65%;
+            top: 35%;
+            transform: translate(-50%, -50%);
+            font-size: 11px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,1);
+            white-space: nowrap;
+            color: white;
+            text-align: center;
+            width: 80px;
+        }
+
+        .segment-1 { background: #8b0000; transform: rotate(0deg); }
+        .segment-1 span { transform: translate(-50%, -50%) rotate(25.7deg); }
+
+        .segment-2 { background: #ff0000; transform: rotate(51.4deg); }
+        .segment-2 span { transform: translate(-50%, -50%) rotate(77.1deg); }
+
+        .segment-3 { background: #cc0000; transform: rotate(102.8deg); }
+        .segment-3 span { transform: translate(-50%, -50%) rotate(128.5deg); }
+
+        .segment-4 { background: #990000; transform: rotate(154.2deg); }
+        .segment-4 span { transform: translate(-50%, -50%) rotate(179.9deg); }
+
+        .segment-5 { background: #ff3333; transform: rotate(205.6deg); }
+        .segment-5 span { transform: translate(-50%, -50%) rotate(231.3deg); }
+
+        .segment-6 { background: #660000; transform: rotate(257deg); }
+        .segment-6 span { transform: translate(-50%, -50%) rotate(282.7deg); }
+
+        .segment-7 { background: #ff6666; transform: rotate(308.4deg); }
+        .segment-7 span { transform: translate(-50%, -50%) rotate(334.1deg); }
+
+        .pointer {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 30px solid #ffd700;
+            z-index: 10;
+            filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.8));
+        }
+
+        .center-circle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(145deg, #ffd700, #ffed4e);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #8b0000;
+            font-size: 24px;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+            z-index: 5;
+        }
+
+        .spin-btn {
+            background: linear-gradient(145deg, #ff0000, #8b0000);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2em;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 20px;
+            box-shadow: 0 5px 20px rgba(255, 0, 0, 0.4);
+            transition: all 0.3s;
+            font-weight: bold;
+            width: 100%;
+            max-width: 250px;
+        }
+
+        .spin-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 0, 0, 0.6);
+        }
+
+        .spin-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 15px;
+            border: 2px solid #ff0000;
+            display: none;
+        }
+
+        .result.show {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result h2 {
+            color: #ffd700;
+            margin-bottom: 10px;
+            font-size: 1.3em;
+        }
+
+        .close-btn {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 12px 30px;
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            width: 100%;
+            max-width: 200px;
+        }
+
+        .close-btn:hover {
+            background: #555;
+        }
+
+        .bot-name {
+            margin-top: 15px;
+            font-size: 0.9em;
+            color: #ff9999;
+        }
+
+        .confetti {
+            position: fixed;
+            width: 8px;
+            height: 8px;
+            background: #ffd700;
+            position: absolute;
+            animation: fall 3s linear;
+        }
+
+        @keyframes fall {
+            to {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .error-message {
+            color: #ff6666;
+            font-size: 1.1em;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            IChancy <span>7</span>
+        </div>
+        
+        <div class="wheel-container">
+            <div class="pointer"></div>
+            <div class="wheel" id="wheel">
+                <div class="wheel-segment segment-1"><span>BAD LUCK</span></div>
+                <div class="wheel-segment segment-2"><span>BONUS 10%</span></div>
+                <div class="wheel-segment segment-3"><span>FREE SPIN</span></div>
+                <div class="wheel-segment segment-4"><span>5,000 SYP</span></div>
+                <div class="wheel-segment segment-5"><span>10,000 SYP</span></div>
+                <div class="wheel-segment segment-6"><span>20,000 SYP</span></div>
+                <div class="wheel-segment segment-7"><span>30,000 SYP</span></div>
+            </div>
+            <div class="center-circle">7</div>
+        </div>
+
+        <button class="spin-btn" id="spinBtn" onclick="spinWheel()">
+            🎡 SPIN WHEEL
+        </button>
+
+        <div class="error-message" id="errorMsg">
+            ⏳ لقد استخدمت لفة اليوم! حاول غداً
+        </div>
+
+        <div class="result" id="result">
+            <h2 id="resultTitle">🎉 CONGRATS!</h2>
+            <p id="resultText">You won: <strong id="prizeName"></strong></p>
+            <button class="close-btn" onclick="closeApp()">CLOSE ↩️</button>
+        </div>
+
+        <div class="bot-name">IChancy Seven - Lucky Wheel</div>
+    </div>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.ready();
+
+        const prizes = [
+            { name: 'BAD LUCK', probability: 70, id: 'none' },
+            { name: 'BONUS 10%', probability: 15, id: 'bonus' },
+            { name: 'FREE SPIN', probability: 10, id: 'free_spin' },
+            { name: '5,000 SYP', probability: 4, id: '5000' },
+            { name: '10,000 SYP', probability: 0.8, id: '10000' },
+            { name: '20,000 SYP', probability: 0.15, id: '20000' },
+            { name: '30,000 SYP', probability: 0.05, id: '30000' }
+        ];
+
+        let isSpinning = false;
+        let hasSpun = false; // ✅ متغير لتتبع إذا لف اليوم
+
+        // ✅ التحقق من الـ user_id
+        function getUserId() {
+            if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                return tg.initDataUnsafe.user.id;
+            }
+            return null;
+        }
+
+        function getPrize() {
+            const random = Math.random() * 100;
+            let cumulative = 0;
+            
+            for (let prize of prizes) {
+                cumulative += prize.probability;
+                if (random <= cumulative) {
+                    return prize;
+                }
+            }
+            return prizes[0];
+        }
+
+        function spinWheel() {
+            // ✅ التحقق من الـ user_id
+            const userId = getUserId();
+            if (!userId) {
+                alert('❌ خطأ: لم يتم التعرف على المستخدم');
+                return;
+            }
+
+            // ✅ التحقق إذا لف اليوم (بشكل مؤقت بالمتصفح)
+            const lastSpinDate = localStorage.getItem('lastSpinDate_' + userId);
+            const today = new Date().toDateString();
+            
+            if (lastSpinDate === today) {
+                document.getElementById('errorMsg').classList.add('show');
+                document.getElementById('spinBtn').disabled = true;
+                document.getElementById('spinBtn').textContent = '⏳ انتظر غداً';
+                return;
+            }
+
+            if (isSpinning) return;
+            
+            const btn = document.getElementById('spinBtn');
+            const wheel = document.getElementById('wheel');
+            
+            isSpinning = true;
+            btn.disabled = true;
+            btn.textContent = '⏳ SPINNING...';
+
+            const prize = getPrize();
+            const prizeIndex = prizes.findIndex(p => p.id === prize.id);
+            
+            const segmentAngle = 360 / 7;
+            const spins = 5;
+            const baseAngle = spins * 360;
+            
+            const targetAngle = baseAngle + (prizeIndex * segmentAngle) + (segmentAngle / 2);
+            const randomOffset = (Math.random() - 0.5) * (segmentAngle * 0.8);
+            const finalAngle = targetAngle + randomOffset;
+
+            wheel.style.transform = `rotate(${finalAngle}deg)`;
+
+            setTimeout(() => {
+                showResult(prize);
+                isSpinning = false;
+                hasSpun = true;
+                
+                // ✅ حفظ تاريخ اللفة
+                localStorage.setItem('lastSpinDate_' + userId, today);
+                
+                btn.textContent = '✅ تم اللف';
+                
+                sendResultToBot(prize, userId);
+            }, 4000);
+        }
+
+        function showResult(prize) {
+            const result = document.getElementById('result');
+            const title = document.getElementById('resultTitle');
+            const prizeName = document.getElementById('prizeName');
+            
+            prizeName.textContent = prize.name;
+            
+            if (prize.id === 'none') {
+                title.textContent = '😔 BAD LUCK';
+                title.style.color = '#ff6666';
+            } else {
+                title.textContent = '🎉 CONGRATS!';
+                title.style.color = '#ffd700';
+                createConfetti();
+            }
+            
+            result.classList.add('show');
+        }
+
+        function createConfetti() {
+            for (let i = 0; i < 30; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 100 + 'vw';
+                    confetti.style.backgroundColor = ['#ffd700', '#ff0000', '#ffffff'][Math.floor(Math.random() * 3)];
+                    confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                    document.body.appendChild(confetti);
+                    
+                    setTimeout(() => confetti.remove(), 4000);
+                }, i * 50);
+            }
+        }
+
+        function sendResultToBot(prize, userId) {
+            // ✅ إرسال النتيجة مع user_id
+            const data = {
+                type: 'wheel_result',
+                user_id: userId,
+                prize: prize
+            };
+            
+            console.log('Sending data to bot:', data); // للتتبع
+            
+            tg.sendData(JSON.stringify(data));
+        }
+
+        function closeApp() {
+            tg.close();
+        }
+
+        // ✅ التحقق عند تحميل الصفحة
+        window.onload = function() {
+            const userId = getUserId();
+            if (userId) {
+                const lastSpinDate = localStorage.getItem('lastSpinDate_' + userId);
+                const today = new Date().toDateString();
+                
+                if (lastSpinDate === today) {
+                    document.getElementById('errorMsg').classList.add('show');
+                    document.getElementById('spinBtn').disabled = true;
+                    document.getElementById('spinBtn').textContent = '⏳ انتظر غداً';
+                }
+            }
+        };
+    </script>
+</body>
+</html>
